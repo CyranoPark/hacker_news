@@ -1,0 +1,131 @@
+html, body {
+  box-sizing: border-box;
+  background-color: #FFFFFF;
+}
+
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
+.entire-zone {
+  width: 85%;
+  margin: 0 auto;
+}
+.menu-area {
+  height: 25px;
+  background-color: #ff6600;
+}
+
+.logo {
+  cursor: pointer;
+  float: left;
+  margin-left: 2px;
+  margin-top: 2px;
+}
+
+.logo img {
+  border: 1px solid white;
+}
+
+.title, .menu {
+  float: left;
+  font-size: 15px;
+  padding-top: 4px;
+}
+
+.title span {
+  cursor: pointer;
+  margin-right: 20px;
+  margin-left: 5px;
+  font-weight: 900;
+
+}
+
+.menu span {
+  cursor: pointer;
+  margin-right: 5px;
+  margin-left: 5px;
+}
+
+.menu > span:hover {
+  color: #FFFFFF;
+}
+
+.login {
+  float: right;
+  font-size: 15px;
+  padding-top: 4px;
+  padding-right: 4px;
+}
+
+.article-list {
+  background-color: #f7f0ec;
+}
+
+.space {
+  height: 5px;
+}
+
+.article-top {
+  display: flex;
+}
+
+.article-title {
+  font-size: 17px;
+  margin-left: 10px;
+}
+
+.site {
+  margin-top: 7px;
+  font-size: 10px;
+  color: gray;
+}
+
+.article-top img {
+  margin-top: 2px;
+  width: 13px;
+  height: 13px;
+  margin-left: 5px;
+}
+
+.rank {
+  margin-top: 2px;
+  width: 25px;
+  text-align: right;
+}
+
+.article-bottom {
+  color: gray;
+  font-size: 10px;
+  margin-left: 50px;
+}
+
+.more {
+  cursor: pointer;
+  margin-top: 10px;
+  margin-left: 45px;
+  height: 30px;
+}
+
+.article-bottom span{
+  margin-left: 3px;
+}
+
+footer {
+  background-color: #f7f0ec;
+  border-top: 2px solid #ff3300;
+}
+
+footer div {
+  margin-top: 10px;
+  height: 30px;
+  text-align: center;
+}
+
+.registraion {
+  font-size: 18px;
+}
+
+.navigation {
+  font-size: 13px;
+}
