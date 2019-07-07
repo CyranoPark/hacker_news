@@ -1,132 +1,271 @@
-const $moreBtn = document.querySelector('.more');
-const $logotitle = document.querySelector('.title');
-let topList = [];
-let page = 1;
+(function () {
+  const $moreBtn = document.querySelector('.more');
+  const $logotitle = document.querySelector('.title');
+  const $new = document.querySelector('.menu-new');
 
-topListLayout(page);
-getTopList();
+  let page = 1;
+  let activePage = 'top';
 
-$moreBtn.addEventListener('click', function () {
-  page++;
   topListLayout(page);
   getTopList();
-});
 
-$logotitle.addEventListener('click', function () {
-  page = 1;
-  topListLayout(page);
-  getTopList();
-});
-
-
-function getTopList () {
-  $.get({
-    url : 'https://hacker-news.firebaseio.com/v0/topstories.json',
-    error : function () {
-      alert('데이터를 가져올 수 없습니다.');
-    },
-    success : function (data) {
-      topList = data;
-      writeTopList(topList);
+  $moreBtn.addEventListener('click', function () {
+    page++;
+    if (activePage === 'top') {
+      topListLayout(page);
+      getTopList();
+    } else if (activePage === 'new') {
+      newListLayout(page);
+      getNewList();
     }
   });
-}
 
-function writeTopList (topArticles) {
-  const startIdx = (page * 30) - 29;
-  // let voteImgs = document.querySelectorAll('.article-top > img');
-  const $articles = document.querySelectorAll('.article');
-  const $titles = document.querySelectorAll('.article-title');
-  const $sites = document.querySelectorAll('.site');
-  const $articleBottom = document.querySelectorAll('.article-bottom > span');
-  const $rank = document.querySelectorAll('.rank');
-  console.log(topArticles[40])
-  for (let i = startIdx; i < startIdx + 30; i++) {
-    $.get({
-      url : `https://hacker-news.firebaseio.com/v0/item/${topArticles[i - 1]}.json?print=pretty`,
+  $logotitle.addEventListener('click', function () {
+    page = 1;
+    activePage = 'top';
+    $new.classList.remove('menu-clicked');
+
+    topListLayout(page);
+    getTopList();
+  });
+
+  $new.addEventListener('click', function () {
+    page = 1;
+    activePage = 'new';
+    $new.classList.add('menu-clicked');
+
+    newListLayout(page);
+    getNewList();
+
+  });
+
+  function getTopList () {
+    $.ajax({
+      url : 'https://hacker-news.firebaseio.com/v0/topstories.json',
+      dataType : 'json',
       error : function () {
-        alert('기사를 읽어오는데 실패했습니다.');
+        alert('데이터를 가져올 수 없습니다.');
       },
       success : function (data) {
-        let elIdx = i - startIdx;
-        let siteUrl = data.url ? data.url.split('/')[2] : '';
-        let creatTime = data.time;
-        let currentDate = new Date();
-        let currentTime = currentDate.getTime();
-        let elaspedTime = (currentTime - creatTime) / 60000;
-        let elaspedTxt = `${Math.round(elaspedTime)} min ago`;
-        if (Math.round(elaspedTime) > 60) {
-          elaspedTxt = `${Math.round(elaspedTime / 60)} hours ago`;
-        } else if (Math.round(elaspedTime) > 1440) {
-          elaspedTxt = `${Math.round(elaspedTime / 1440)} days ago`;
-        }
-
-        $articles[elIdx].dataset.id = data.id;
-        $rank[elIdx].textContent = i + '.';
-        $titles[elIdx].textContent = data.title;
-        $sites[elIdx].textContent = `(${siteUrl})`;
-        $articleBottom[((elIdx + 1) * 8) - 8].textContent = `${data.score} points`;
-        $articleBottom[((elIdx + 1) * 8) - 7].textContent = 'by';
-        $articleBottom[((elIdx + 1) * 8) - 6].textContent = data.by;
-        $articleBottom[((elIdx + 1) * 8) - 5].textContent = elaspedTxt;
-        $articleBottom[((elIdx + 1) * 8) - 4].textContent = '|';
-        $articleBottom[((elIdx + 1) * 8) - 3].textContent = 'hidden';
-        $articleBottom[((elIdx + 1) * 8) - 2].textContent = '|';
-        $articleBottom[((elIdx + 1) * 8) - 1].textContent = data.descendants;
+        writeTopList(data);
       }
-    })
-  }
-}
-
-// 보트 : /vote?id=20352417&how=up&goto=news
-// 타이들 : 기사 링크, 
-// 사이트 주소 : 기사를 작성한 사이트 주소 링크,
-// 스코어 : 
-// 작성자 : /user?id=sohkamyung
-// 작성시간 : /item?id=20352417
-// hide : hide?id=20352417&goto=news
-// 댓글 수
-
-function topListLayout (page) {
-  const $contentsBox = document.querySelector('.contents-box');
-
-  while($contentsBox.firstChild) {
-    $contentsBox.removeChild($contentsBox.firstChild);
+    });
   }
 
-  let startNum = (page * 30) - 29;
-  
-  for (let num = startNum; num < startNum + 30; num++) {
-    let $article = document.createElement('div');
-    $article.className = 'article';
+  function writeTopList (topArticles) {
+    const startIdx = (page * 30) - 29;
+    const $articles = document.querySelectorAll('.article');
+    const $articlesLink = document.querySelectorAll('.article-title > a');
+    const $sitesLink = document.querySelectorAll('.site > a');
+    const $articleBottom = document.querySelectorAll('.article-bottom > span');
+    const $rank = document.querySelectorAll('.rank');
+    for (let i = startIdx; i < startIdx + 30; i++) {
+      $.ajax({
+        url : `https://hacker-news.firebaseio.com/v0/item/${topArticles[i - 1]}.json?print=pretty`,
+        dataType : 'json',
+        error : function () {
+          alert(`ID : ${data.id} \n 기사를 읽어오는데 실패했습니다.`);
+        },
+        success : function (data) {
+          let elIdx = i - startIdx;
+          let siteUrl = data.url ? data.url.split('/').splice(0,3).join('/') : '/';
+          let siteUrlTxt = data.url ? data.url.split('/')[2] : '';
+          let createTime = new Date(data.time).getTime();
+          let currentTime = Math.floor(new Date().getTime() / 1000);
+          let elaspedTime = (currentTime - createTime) / 60;
+          let elaspedTxt = `${Math.floor(elaspedTime)} min ago`;
+          if (Math.round(elaspedTime) >= 60 && Math.round(elaspedTime) < 1440) {
+            elaspedTxt = `${Math.floor(elaspedTime / 60)} hours ago`;
+          } else if (Math.round(elaspedTime) >= 1440) {
+            elaspedTxt = `${Math.floor(elaspedTime / (24 * 60))} days ago`;
+          }
 
-    for (let i = 0; i < 3; i++) {
-      let $div = document.createElement('div');
-      $article.appendChild($div);
+          $articles[elIdx].dataset.id = data.id;
+          $rank[elIdx].textContent = i + '.';
+          $articlesLink[elIdx].setAttribute('href', data.url);
+          $articlesLink[elIdx].setAttribute('target', '_blank');
+          $articlesLink[elIdx].textContent = data.title;
+          $sitesLink[elIdx].textContent = `(${siteUrlTxt})`;
+          $sitesLink[elIdx].setAttribute('href', siteUrl);
+          $sitesLink[elIdx].setAttribute('target', '_blank');
+          $articleBottom[((elIdx + 1) * 8) - 8].textContent = `${data.score} points`;
+          $articleBottom[((elIdx + 1) * 8) - 7].textContent = 'by';
+          $articleBottom[((elIdx + 1) * 8) - 6].textContent = data.by;
+          $articleBottom[((elIdx + 1) * 8) - 5].textContent = elaspedTxt;
+          $articleBottom[((elIdx + 1) * 8) - 4].textContent = '|';
+          $articleBottom[((elIdx + 1) * 8) - 3].textContent = 'hide';
+          $articleBottom[((elIdx + 1) * 8) - 2].textContent = '|';
+          $articleBottom[((elIdx + 1) * 8) - 1].textContent = data.descendants;
+        }
+      })
     }
-    $article.children[0].className = 'space';
-    $article.children[1].className = 'article-top';
-    $article.children[2].className = 'article-bottom';
+  }
+
+  function topListLayout (page) {
+    const $contentsBox = document.querySelector('.contents-box');
+
+    while($contentsBox.firstChild) {
+      $contentsBox.removeChild($contentsBox.firstChild);
+    }
+
+    let startNum = (page * 30) - 29;
     
-    let $rank = document.createElement('div');
-    $rank.className = 'rank'
-    let $img = document.createElement('img');
-    $img.setAttribute('src', 'asset/img/arrow.gif');
-    $img.setAttribute('alt', 'vote arrow');
-    let $articleTitle = document.createElement('span');
-    $articleTitle.className = 'article-title';
-    let $site = document.createElement('span');
-    $site.className = 'site';
-  
-    $article.children[1].appendChild($rank);
-    $article.children[1].appendChild($img);
-    $article.children[1].appendChild($articleTitle);
-    $article.children[1].appendChild($site);
-  
-    for (let j = 0; j < 8; j++) {
-      let $span = document.createElement('span');
-      $article.children[2].appendChild($span);
+    for (let num = startNum; num < startNum + 30; num++) {
+      let $article = document.createElement('div');
+      $article.className = 'article';
+
+      for (let i = 0; i < 3; i++) {
+        let $div = document.createElement('div');
+        $article.appendChild($div);
+      }
+      $article.children[0].className = 'space';
+      $article.children[1].className = 'article-top';
+      $article.children[2].className = 'article-bottom';
+      
+      let $rank = document.createElement('div');
+      $rank.className = 'rank';
+
+      let $img = document.createElement('img');
+      $img.setAttribute('src', 'asset/img/arrow.gif');
+      $img.setAttribute('alt', 'vote arrow');
+
+      let $articleLink = document.createElement('a');
+      let $articleTitle = document.createElement('span');
+      $articleTitle.className = 'article-title';
+      $articleTitle.appendChild($articleLink);
+
+      let $siteLink = document.createElement('a');
+      let $site = document.createElement('span');
+      $site.appendChild($siteLink);
+      $site.className = 'site';
+      
+      $article.children[1].appendChild($rank);
+      $article.children[1].appendChild($img);
+      $article.children[1].appendChild($articleTitle);
+      $article.children[1].appendChild($site);
+    
+      for (let j = 0; j < 8; j++) {
+        let $span = document.createElement('span');
+        $article.children[2].appendChild($span);
+      }
+      $contentsBox.appendChild($article);
     }
-    $contentsBox.appendChild($article);
   }
-}
+
+  function getNewList () {
+    $.ajax({
+      url : 'https://hacker-news.firebaseio.com/v0/newstories.json',
+      dataType : 'json',
+      error : function () {
+        alert('데이터를 가져올 수 없습니다.');
+      },
+      success : function (data) {
+        writeNewList(data);
+      }
+    });
+  }
+
+  function writeNewList (topArticles) {
+    const startIdx = (page * 30) - 29;
+    const $articles = document.querySelectorAll('.article');
+    const $articlesLink = document.querySelectorAll('.article-title > a');
+    const $sitesLink = document.querySelectorAll('.site > a');
+    const $articleBottom = document.querySelectorAll('.article-bottom > span');
+    const $rank = document.querySelectorAll('.rank');
+    for (let i = startIdx; i < startIdx + 30; i++) {
+      $.ajax({
+        url : `https://hacker-news.firebaseio.com/v0/item/${topArticles[i - 1]}.json?print=pretty`,
+        dataType : 'json',
+        error : function () {
+          alert(`ID : ${data.id} \n 기사를 읽어오는데 실패했습니다.`);
+        },
+        success : function (data) {
+          let elIdx = i - startIdx;
+          let siteUrl = data.url ? data.url.split('/').splice(0,3).join('/') : '/';
+          let siteUrlTxt = data.url ? data.url.split('/')[2] : '';
+          let createTime = new Date(data.time).getTime();
+          let currentTime = Math.floor(new Date().getTime() / 1000);
+          let elaspedTime = (currentTime - createTime) / 60;
+          let elaspedTxt = `${Math.floor(elaspedTime)} min ago`;
+          if (Math.round(elaspedTime) >= 60 && Math.round(elaspedTime) < 1440) {
+            elaspedTxt = `${Math.floor(elaspedTime / 60)} hours ago`;
+          } else if (Math.round(elaspedTime) >= 1440) {
+            elaspedTxt = `${Math.floor(elaspedTime / (24 * 60))} days ago`;
+          }
+
+          $articles[elIdx].dataset.id = data.id;
+          $rank[elIdx].textContent = i + '.';
+          $articlesLink[elIdx].setAttribute('href', data.url);
+          $articlesLink[elIdx].setAttribute('target', '_blank');
+          $articlesLink[elIdx].textContent = data.title;
+          $sitesLink[elIdx].textContent = `(${siteUrlTxt})`;
+          $sitesLink[elIdx].setAttribute('href', siteUrl);
+          $sitesLink[elIdx].setAttribute('target', '_blank');
+          $articleBottom[((elIdx + 1) * 12) - 12].textContent = `${data.score} points`;
+          $articleBottom[((elIdx + 1) * 12) - 11].textContent = 'by';
+          $articleBottom[((elIdx + 1) * 12) - 10].textContent = data.by;
+          $articleBottom[((elIdx + 1) * 12) - 9].textContent = elaspedTxt;
+          $articleBottom[((elIdx + 1) * 12) - 8].textContent = '|';
+          $articleBottom[((elIdx + 1) * 12) - 7].textContent = 'hide';
+          $articleBottom[((elIdx + 1) * 12) - 6].textContent = '|';
+          $articleBottom[((elIdx + 1) * 12) - 5].textContent = 'past';
+          $articleBottom[((elIdx + 1) * 12) - 4].textContent = '|';
+          $articleBottom[((elIdx + 1) * 12) - 3].textContent = 'web';
+          $articleBottom[((elIdx + 1) * 12) - 2].textContent = '|';
+          $articleBottom[((elIdx + 1) * 12) - 1].textContent = data.descendants ? data.descendants : 'discuss';
+        }
+      })
+    }
+  }
+
+  function newListLayout (page) {
+    const $contentsBox = document.querySelector('.contents-box');
+
+    while($contentsBox.firstChild) {
+      $contentsBox.removeChild($contentsBox.firstChild);
+    }
+
+    let startNum = (page * 30) - 29;
+    
+    for (let num = startNum; num < startNum + 30; num++) {
+      let $article = document.createElement('div');
+      $article.className = 'article';
+
+      for (let i = 0; i < 3; i++) {
+        let $div = document.createElement('div');
+        $article.appendChild($div);
+      }
+      $article.children[0].className = 'space';
+      $article.children[1].className = 'article-top';
+      $article.children[2].className = 'article-bottom';
+      
+      let $rank = document.createElement('div');
+      $rank.className = 'rank';
+
+      let $img = document.createElement('img');
+      $img.setAttribute('src', 'asset/img/arrow.gif');
+      $img.setAttribute('alt', 'vote arrow');
+
+      let $articleLink = document.createElement('a');
+      let $articleTitle = document.createElement('span');
+      $articleTitle.className = 'article-title';
+      $articleTitle.appendChild($articleLink);
+
+      let $siteLink = document.createElement('a');
+      let $site = document.createElement('span');
+      $site.appendChild($siteLink);
+      $site.className = 'site';
+      
+      $article.children[1].appendChild($rank);
+      $article.children[1].appendChild($img);
+      $article.children[1].appendChild($articleTitle);
+      $article.children[1].appendChild($site);
+    
+      for (let j = 0; j < 12; j++) {
+        let $span = document.createElement('span');
+        $article.children[2].appendChild($span);
+      }
+      $contentsBox.appendChild($article);
+    }
+  }
+})();

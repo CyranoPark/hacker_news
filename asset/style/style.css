@@ -7,6 +7,24 @@ html, body {
   box-sizing: inherit;
 }
 
+A:link {
+color: black;
+text-decoration: none;
+}
+
+A:visited {
+  color: black;
+}
+
+A:active {
+  color: black;
+}
+
+A:hover {
+  color: black;
+  text-decoration: underline;
+}
+
 .entire-zone {
   width: 85%;
   margin: 0 auto;
@@ -47,7 +65,7 @@ html, body {
   margin-left: 5px;
 }
 
-.menu > span:hover {
+.menu-clicked {
   color: #FFFFFF;
 }
 
@@ -70,7 +88,8 @@ html, body {
   display: flex;
 }
 
-.article-title {
+.article-title > a {
+  cursor: pointer;
   font-size: 17px;
   margin-left: 10px;
 }
