@@ -2,10 +2,8 @@
   const $moreBtn = document.querySelector('.more');
   const $logotitle = document.querySelector('.title');
   const $new = document.querySelector('.menu-new');
-
   let page = 1;
   let activePage = 'top';
-
   topListLayout(page);
   getTopList();
 
@@ -40,65 +38,81 @@
   });
 
   function getTopList () {
-    $.ajax({
-      url : 'https://hacker-news.firebaseio.com/v0/topstories.json',
-      dataType : 'json',
-      error : function () {
-        alert('데이터를 가져올 수 없습니다.');
-      },
-      success : function (data) {
-        writeTopList(data);
-      }
+    const getList = new Promise(function (resolve, reject) {
+      $.get({
+        url : 'https://hacker-news.firebaseio.com/v0/topstories.json',
+        dataType : 'json',
+        error : function () {
+          reject();
+        },
+        success : function (data) {
+          resolve(data);
+        }
+      });
     });
+
+    getList.then(function (list) {
+      const startIdx = (page * 30) - 30;
+      const listItems = [];
+      for (let i = startIdx; i < startIdx + 30; i++) {
+        let loadItem = new Promise(function (resolve, reject) {
+          $.get({
+            url : `https://hacker-news.firebaseio.com/v0/item/${list[i]}.json?print=pretty`,
+            dataType : 'json',
+            error : function () {
+              reject();
+            },
+            success : function (itemData) {
+              resolve(itemData);
+            }
+          });
+        });
+        listItems[i - ((page - 1) * 30)] = loadItem;
+      }
+      Promise.all(listItems).then(function (items) {
+        items.forEach(function (item, i) {
+            writeTopList(item, i);
+        });
+      });
+    }).catch(function () {
+      alert('데이터를 가져올 수 없습니다.');
+    })
   }
 
-  function writeTopList (topArticles) {
-    const startIdx = (page * 30) - 29;
+  function writeTopList (data, index) {
     const $articles = document.querySelectorAll('.article');
     const $articlesLink = document.querySelectorAll('.article-title > a');
     const $sitesLink = document.querySelectorAll('.site > a');
     const $articleBottom = document.querySelectorAll('.article-bottom > span');
     const $rank = document.querySelectorAll('.rank');
-    for (let i = startIdx; i < startIdx + 30; i++) {
-      $.ajax({
-        url : `https://hacker-news.firebaseio.com/v0/item/${topArticles[i - 1]}.json?print=pretty`,
-        dataType : 'json',
-        error : function () {
-          alert(`ID : ${data.id} \n 기사를 읽어오는데 실패했습니다.`);
-        },
-        success : function (data) {
-          let elIdx = i - startIdx;
-          let siteUrl = data.url ? data.url.split('/').splice(0,3).join('/') : '/';
-          let siteUrlTxt = data.url ? data.url.split('/')[2] : '';
-          let createTime = new Date(data.time).getTime();
-          let currentTime = Math.floor(new Date().getTime() / 1000);
-          let elaspedTime = (currentTime - createTime) / 60;
-          let elaspedTxt = `${Math.floor(elaspedTime)} min ago`;
-          if (Math.round(elaspedTime) >= 60 && Math.round(elaspedTime) < 1440) {
-            elaspedTxt = `${Math.floor(elaspedTime / 60)} hours ago`;
-          } else if (Math.round(elaspedTime) >= 1440) {
-            elaspedTxt = `${Math.floor(elaspedTime / (24 * 60))} days ago`;
-          }
+    let siteUrl = data.url ? data.url.split('/').splice(0,3).join('/') : '/';
+    let siteUrlTxt = data.url ? data.url.split('/')[2] : '';
+    let createTime = new Date(data.time).getTime();
+    let currentTime = Math.floor(new Date().getTime() / 1000);
+    let elaspedTime = (currentTime - createTime) / 60;
+    let elaspedTxt = `${Math.floor(elaspedTime)} min ago`;
 
-          $articles[elIdx].dataset.id = data.id;
-          $rank[elIdx].textContent = i + '.';
-          $articlesLink[elIdx].setAttribute('href', data.url);
-          $articlesLink[elIdx].setAttribute('target', '_blank');
-          $articlesLink[elIdx].textContent = data.title;
-          $sitesLink[elIdx].textContent = `(${siteUrlTxt})`;
-          $sitesLink[elIdx].setAttribute('href', siteUrl);
-          $sitesLink[elIdx].setAttribute('target', '_blank');
-          $articleBottom[((elIdx + 1) * 8) - 8].textContent = `${data.score} points`;
-          $articleBottom[((elIdx + 1) * 8) - 7].textContent = 'by';
-          $articleBottom[((elIdx + 1) * 8) - 6].textContent = data.by;
-          $articleBottom[((elIdx + 1) * 8) - 5].textContent = elaspedTxt;
-          $articleBottom[((elIdx + 1) * 8) - 4].textContent = '|';
-          $articleBottom[((elIdx + 1) * 8) - 3].textContent = 'hide';
-          $articleBottom[((elIdx + 1) * 8) - 2].textContent = '|';
-          $articleBottom[((elIdx + 1) * 8) - 1].textContent = data.descendants;
-        }
-      })
+    if (Math.round(elaspedTime) >= 60 && Math.round(elaspedTime) < 1440) {
+      elaspedTxt = `${Math.floor(elaspedTime / 60)} hours ago`;
+    } else if (Math.round(elaspedTime) >= 1440) {
+      elaspedTxt = `${Math.floor(elaspedTime / (24 * 60))} days ago`;
     }
+    $articles[index].dataset.id = data.id;
+    $rank[index].textContent = index + 1 + ((page - 1) * 30) + '.';
+    $articlesLink[index].setAttribute('href', data.url);
+    $articlesLink[index].setAttribute('target', '_blank');
+    $articlesLink[index].textContent = data.title;
+    $sitesLink[index].textContent = `(${siteUrlTxt})`;
+    $sitesLink[index].setAttribute('href', siteUrl);
+    $sitesLink[index].setAttribute('target', '_blank');
+    $articleBottom[((index + 1) * 8) - 8].textContent = `${data.score} points`;
+    $articleBottom[((index + 1) * 8) - 7].textContent = 'by';
+    $articleBottom[((index + 1) * 8) - 6].textContent = data.by;
+    $articleBottom[((index + 1) * 8) - 5].textContent = elaspedTxt;
+    $articleBottom[((index + 1) * 8) - 4].textContent = '|';
+    $articleBottom[((index + 1) * 8) - 3].textContent = 'hide';
+    $articleBottom[((index + 1) * 8) - 2].textContent = '|';
+    $articleBottom[((index + 1) * 8) - 1].textContent = data.descendants;
   }
 
   function topListLayout (page) {
@@ -109,7 +123,7 @@
     }
 
     let startNum = (page * 30) - 29;
-    
+
     for (let num = startNum; num < startNum + 30; num++) {
       let $article = document.createElement('div');
       $article.className = 'article';
@@ -121,7 +135,7 @@
       $article.children[0].className = 'space';
       $article.children[1].className = 'article-top';
       $article.children[2].className = 'article-bottom';
-      
+
       let $rank = document.createElement('div');
       $rank.className = 'rank';
 
@@ -138,12 +152,12 @@
       let $site = document.createElement('span');
       $site.appendChild($siteLink);
       $site.className = 'site';
-      
+
       $article.children[1].appendChild($rank);
       $article.children[1].appendChild($img);
       $article.children[1].appendChild($articleTitle);
       $article.children[1].appendChild($site);
-    
+
       for (let j = 0; j < 8; j++) {
         let $span = document.createElement('span');
         $article.children[2].appendChild($span);
@@ -153,7 +167,7 @@
   }
 
   function getNewList () {
-    $.ajax({
+    $.get({
       url : 'https://hacker-news.firebaseio.com/v0/newstories.json',
       dataType : 'json',
       error : function () {
@@ -173,7 +187,7 @@
     const $articleBottom = document.querySelectorAll('.article-bottom > span');
     const $rank = document.querySelectorAll('.rank');
     for (let i = startIdx; i < startIdx + 30; i++) {
-      $.ajax({
+      $.get({
         url : `https://hacker-news.firebaseio.com/v0/item/${topArticles[i - 1]}.json?print=pretty`,
         dataType : 'json',
         error : function () {
